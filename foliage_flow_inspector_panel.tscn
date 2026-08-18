@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://rm2ur88d8sj0"]
+
+[ext_resource type="Texture2D" uid="uid://dnu07nn86muta" path="res://addons/FoliageFlow/Icon.png" id="1_yt8a2"]
+
+[sub_resource type="GDScript" id="GDScript_u0op2"]
+script/source = "@tool
+extends PanelContainer
+
+var _foliage_flow
+
+func setup(node) -> void:
+	_foliage_flow = node
+"
+
+[node name="FoliageFlowInspectorPanel" type="PanelContainer" unique_id=985431983]
+custom_minimum_size = Vector2(0, 252)
+offset_right = 331.0
+offset_bottom = 508.0
+script = SubResource("GDScript_u0op2")
+
+[node name="Margin" type="MarginContainer" parent="." unique_id=158048295]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Content" type="VBoxContainer" parent="Margin" unique_id=245628026]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Margin/Content" unique_id=1867568635]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.85, 0.56, 1)
+theme_override_font_sizes/font_size = 16
+text = "FoliageFlow "
+
+[node name="TargetDetail" type="Label" parent="Margin/Content" unique_id=1544095210]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "Assign a MultiMeshInstance3D in Target below before painting."
+autowrap_mode = 2
+
+[node name="Separator" type="HSeparator" parent="Margin/Content" unique_id=315062098]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="Margin/Content" unique_id=2073548141]
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("1_yt8a2")
