@@ -14,8 +14,9 @@ extends Node3D
 @export_range(0.05, 50.0, 0.05) var erase_radius := 1.75
 @export_range(0.0, 100.0, 0.1) var minimum_spacing := 0.18
 @export var allow_overpaint := false
-@export_range(1.0, 120.0, 1.0) var max_slope_degrees := 45.0
+@export_range(1.0, 180.0, 1.0) var max_slope_degrees := 45.0
 @export var surface_offset := 0.0
+@export_flags_3d_physics var collision_mask := 1
 
 @export_group("Variation")
 @export var random_y_rotation := true
@@ -78,7 +79,7 @@ func paint(camera: Camera3D, screen_pos: Vector2) -> bool:
 		_erase(hit.position)
 	else:
 		for i in instances_per_stamp:
-			_add_instance(hit.position)
+			_add_instance(hit.position, hit.normal)
 		_queue_flush()
 	return true
 
@@ -113,13 +114,16 @@ func _make_multimesh_unique() -> void:
 	if is_instance_valid(_target) and _target.multimesh:
 		_target.multimesh = _target.multimesh.duplicate(true) as MultiMesh
 
-func _add_instance(center: Vector3) -> void:
+func _add_instance(center: Vector3, hit_normal: Vector3) -> void:
 	var angle := randf() * TAU
 	var distance := sqrt(randf()) * brush_radius
-	var sample := center + Vector3(cos(angle) * distance, 0.0, sin(angle) * distance)
+	var basis_brush := _normal_basis(hit_normal)
+	var offset_dir := basis_brush.x * cos(angle) + basis_brush.z * sin(angle)
+	var sample := center + offset_dir * distance
+
 	if use_density_noise and randf() > _density_at(sample):
 		return
-	var hit := _drop_to_surface(sample)
+	var hit := _drop_to_surface(sample, hit_normal)
 	if hit.is_empty() or hit.normal.angle_to(Vector3.UP) > deg_to_rad(max_slope_degrees):
 		return
 	var local_position := _target.to_local(hit.position + hit.normal * surface_offset)
@@ -223,12 +227,14 @@ func _raycast(camera: Camera3D, screen_pos: Vector2) -> Dictionary:
 	var origin := camera.project_ray_origin(screen_pos)
 	var direction := camera.project_ray_normal(screen_pos)
 	var state := get_world_3d().direct_space_state
-	var result := state.intersect_ray(PhysicsRayQueryParameters3D.create(origin, origin + direction * 10000.0))
-	return {} if result.is_empty() else {"position": result.position}
+	var result := state.intersect_ray(PhysicsRayQueryParameters3D.create(origin, origin + direction * 10000.0, collision_mask))
+	return {} if result.is_empty() else {"position": result.position, "normal": result.normal}
 
-func _drop_to_surface(point: Vector3) -> Dictionary:
+func _drop_to_surface(point: Vector3, surface_normal: Vector3) -> Dictionary:
 	var state := get_world_3d().direct_space_state
-	var result := state.intersect_ray(PhysicsRayQueryParameters3D.create(point + Vector3.UP * 500.0, point + Vector3.DOWN * 1000.0))
+	var ray_start := point + surface_normal * 10.0
+	var ray_end := point - surface_normal * 10.0
+	var result := state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_start, ray_end, collision_mask))
 	return {} if result.is_empty() else {"position": result.position, "normal": result.normal}
 
 func _check_target() -> bool:
